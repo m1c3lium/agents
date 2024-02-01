@@ -1,0 +1,22 @@
+[package]
+name = "agents"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+reqwest = { version = "0.11.23", features = ["json", "native-tls", "stream"] }
+tokio = { version = "1", features = ["macros", "rt"] }
+bytes = { version = "1", features = ["serde"] }
+serde_json = "1.0.111"
+serde = { version = "1.0.195", features = ["serde_derive"] }
+anyhow = "1.0.79"
+
+futures-util = "0.3.30"
+async-recursion = "1.0.5"
+env_logger = "0.11.1"
+log = "0.4.20"
+
+json-stream = "0.1.1"
+pin-project = "1.1.4"
