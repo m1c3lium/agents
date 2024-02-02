@@ -1,3 +1,6 @@
+// Global Types
+use serde_json::json;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
@@ -57,16 +60,32 @@ mod tests {
 
     #[tokio::test]
     async fn test_ollama_chat_endpoint() -> anyhow::Result<()> {
-        let schema = "{\n\t\
-            \"name\": \"add_two_numbers\",\n\t\
-            \"description\": \"Adds two numbers together.\",\n\t\
-            \"signature\": \"(first_number: int, second_number: int) -> int\",\n\t\
-            \"output\": \"<class 'int'>\",\n\
-        }";
+        let schema = ::serde_json::to_string_pretty(&json!({
+            "name": "add_two_numbers",
+            "description": "Adds two numbers together.",
+            "signature": "(first_number: int, second_number: int) -> int",
+            "output": "<class 'int'>"
+        }))?;
+
+        let query0 = "How is the weather in Hawaii right now in International units?";
+        let schema0 = ::serde_json::to_string_pretty(&json!({
+            "name": "get_weather",
+            "description": "Useful to get the weather in a specific location",
+            "signature": "(location: str, degree: str) -> str",
+            "output": "<class 'str'>"
+        }))?;
+        let resp0 = ::serde_json::to_string_pretty(&json!({
+            "name": "get_weather",
+            "data": {
+                "location": "London",
+                "degree": "Celsius"
+            }
+        }))?;
+
         let query = "Add 2 and 5";
         let prompt = format!(
             "\
-            <s> [INST]You are a helpful assistant designed to output JSON.\n\
+            <s>[INST] You are a helpful assistant designed to output JSON.\n\
             Given the following function schema\n\
             < {schema} >\n\
             and query\n\
@@ -74,23 +93,12 @@ mod tests {
             extract the parameters values from the query, in a valid JSON format.\n\
             Example:\n\
             Input:\n\
-            query: \"How is the weather in Hawaii right now in International units?\"\n\
-            schema:\n\
-            {{\n\t\
-                \"name\": \"get_weather\",\n\t\
-                \"description\": \"Useful to get the weather in a specific location\",\n\t\
-                \"signature\": \"(location: str, degree: str) -> str\",\n\t\
-                \"output\": \"<class 'str'>\",\n\
-            }}\
-            [/INST] \
-            Result: {{\n\t\
-                \"location\": \"London\",\n\t\
-                \"degree\": \"Celsius\",\n\
-            }}</s> \
-            [INST]Input:\n\
+            query: \"{query0}\"\n\
+            schema: {schema0} [/INST] \n\
+            Result: {resp0}</s> \n\
+            [INST] Input:\n\
             query: {query}\n\
-            schema: {schema}\
-            [/INST] \
+            schema: {schema} [/INST] \n\
             Result: \
             "
         );
@@ -104,7 +112,7 @@ mod tests {
 
         let stream = reqwest::Client::new()
             .post("http://0.0.0.0:11434/api/generate")
-            .json(&serde_json::json!({
+            .json(&json!({
                 "model": "mistral:instruct",
                 "prompt": prompt
             }))
@@ -136,7 +144,7 @@ mod tests {
 
         let data = core::iter::from_fn(|| {
             Some(Ok::<_, std::io::Error>(
-                (serde_json::json!({
+                (json!({
                   "model": "llama2",
                   "created_at": "2023-08-04T08:52:19.385406455-07:00",
                   "message": {
@@ -150,7 +158,7 @@ mod tests {
                     .into_bytes(),
             ))
         })
-        .chain(core::iter::once(Ok((serde_json::json!({
+        .chain(core::iter::once(Ok((json!({
           "model": "llama2",
           "created_at": "2023-08-04T19:22:45.499127Z",
           "eval_count": 282,
